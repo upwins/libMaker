@@ -6,5 +6,7 @@ Software by Bill Basener in colaboration with Michael Luegering (School of Data 
 Funded by U.S. Army Corps of Engineers, Urban Planning with Integtrated Natural Systems (UPWINS).
 
 SAMPLE DATA STRUCTURE:
-![image](https://github.com/wbasener/libMaker/assets/51686251/868280a9-53b5-4194-a447-cf11f8470f05)
+![image](https://github.com/wbasener/libMaker/assets/51686251/e5dd3117-31a1-4d06-a0bf-41cb5e89a83b)
+
+!
 
