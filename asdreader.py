@@ -47,18 +47,19 @@ def parse_bstr(asd, offset):
 
 
         bstr = struct.unpack_from(bstr_format, asd, offset)
-        #print(bstr_format, offset, bstr[0])
+        # print(bstr_format, offset, bstr[0])
         offset += struct.calcsize(bstr_format)
         return bstr[0], offset
     except:
         print(len(asd), offset)
-        # print(offset - 5, struct.unpack_from('<20s', asd, offset - 5))
+        print(offset - 5, struct.unpack_from('<20s', asd, offset - 5))
         raise
 
 
 def parse_time(timestring):
     s = struct.unpack_from('9h', timestring)
-    return datetime.datetime(1900 + s[5], month=s[4], day=s[3], hour=s[2], minute=s[1], second=s[0])
+    dt = datetime.datetime(1900 + s[5], month=s[4]+1, day=s[3], hour=s[2], minute=s[1], second=s[0])
+    return dt
 
 
 def parse_gps(gps_field):
@@ -163,7 +164,7 @@ def parse_calibration_header(asd, offset):
     buffer_count = struct.unpack_from(header_format, asd, offset)[0]
 
 
-    print(len(asd), offset, len(asd) - offset, struct.calcsize(header_format), buffer_count)
+    #print(len(asd), offset, len(asd) - offset, struct.calcsize(header_format), buffer_count)
     offset += struct.calcsize(header_format)
 
     calibration_buffer = []
@@ -174,7 +175,7 @@ def parse_calibration_header(asd, offset):
         calibration_buffer.append(((cal_type, name, intergration_time, swir1gain, swir2gain)))
         offset += struct.calcsize(calibration_buffer_format)
 
-    print(calibration_buffer)
+    #print(calibration_buffer)
     return calibration_buffer, offset
 
 
@@ -190,6 +191,11 @@ def parse_sig(asd, offset):
 
 def parse_spectra(asd, offset, channels):
     spec = np.array(struct.unpack_from('<{}d'.format(channels), asd, offset))
+    #try:
+    #     spec = np.array(struct.unpack_from('<{}d'.format(channels), asd, offset))
+    #except:
+    #    # if the data is float, not double
+    #    spec = np.array(struct.unpack_from('<{}f'.format(channels), asd, offset))
     offset += (channels * 8)
     return spec, offset
 
