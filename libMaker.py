@@ -35,8 +35,7 @@ growth_stage_codes = {
 	'D': ['Dormant', 'D'],
 	'1G': ['Year 1 growth', '1G'],
 	'1F': ['Year 1 Flowering', '1F'],
-	'M': ['Mature', ' M'],
-	'MX': ['Mix Dormant and Re-emergence', ' MX']
+	'M': ['Mature', ' M']
 }
 principal_part_codes = {  
     'MX': ['Mix', 'MX'],
@@ -53,7 +52,7 @@ principal_part_codes = {
 }
 health_codes = { 
 	'H': ['Healthy', 'H'],
-    'MX': ['Mix Dormant Healthy', 'MX'],
+    'MH': ['Mix Dormant Healthy', 'MH'],
 	'DS': ['Drought Stress', 'DS'],
 	'SS': ['Salt Stress', 'SS'],
 	'S': ['Stress', 'S'],
@@ -223,12 +222,10 @@ def read(filepath):
             s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes[key]
     
     if 'mix of senesced and green' in s.metadata['comment'].lower():
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['MX']
-        s.metadata['health_description'], s.metadata['health_code'] = health_codes['MX']
+        s.metadata['health_description'], s.metadata['health_code'] = health_codes['MH']
     
     if ('senesced portion' in fname.lower()) or ('greenAndSenesced' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['MX']
-        s.metadata['health_description'], s.metadata['health_code'] = health_codes['MX']
+        s.metadata['health_description'], s.metadata['health_code'] = health_codes['MH']
     
     if ('y1g' in fname.lower()) or ('y1g' in s.metadata['comment'].lower()):
         s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['1G']
@@ -276,7 +273,7 @@ def read(filepath):
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['S']
     
     if 'mix of senesced and green' in s.metadata['comment'].lower():
-        s.metadata['health_description'], s.metadata['health_code'] = health_codes['MX']
+        s.metadata['health_description'], s.metadata['health_code'] = health_codes['MH']
     
     if ('rust' in fname.lower()) or ('rust' in s.metadata['comment'].lower()):
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['R']
@@ -589,9 +586,10 @@ Age Code:
 	Mature				        M
 
 Health Code:
-	Healthy 			H 
-	Drought Stress 		DS
-	Salt Stress			SS
+	Healthy 			    H 
+	Drought Stress 		    DS
+	Salt Stress			    SS
+	SMixed Halthy\Stressed	MH
 *For disease infestation or other plant specifics in terrestrial collection, please input information in metadata
 
 Plant Code:
