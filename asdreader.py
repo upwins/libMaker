@@ -47,20 +47,19 @@ def parse_bstr(asd, offset):
 
 
         bstr = struct.unpack_from(bstr_format, asd, offset)
-        # print(bstr_format, offset, bstr[0])
+        #print(bstr_format, offset, bstr[0])
         offset += struct.calcsize(bstr_format)
         return bstr[0], offset
     except:
-        print(len(asd), offset)
-        print(offset - 5, struct.unpack_from('<20s', asd, offset - 5))
+        pass
+        # print(len(asd), offset)
+        # print(offset - 5, struct.unpack_from('<20s', asd, offset - 5))
         raise
-
 
 def parse_time(timestring):
     s = struct.unpack_from('9h', timestring)
     dt = datetime.datetime(1900 + s[5], month=s[4]+1, day=s[3], hour=s[2], minute=s[1], second=s[0])
     return dt
-
 
 def parse_gps(gps_field):
     gps_tuple = namedtuple('gpsdata', 'heading speed latitude longitude altitude')
@@ -164,7 +163,7 @@ def parse_calibration_header(asd, offset):
     buffer_count = struct.unpack_from(header_format, asd, offset)[0]
 
 
-    #print(len(asd), offset, len(asd) - offset, struct.calcsize(header_format), buffer_count)
+    #3print(len(asd), offset, len(asd) - offset, struct.calcsize(header_format), buffer_count)
     offset += struct.calcsize(header_format)
 
     calibration_buffer = []
@@ -175,7 +174,7 @@ def parse_calibration_header(asd, offset):
         calibration_buffer.append(((cal_type, name, intergration_time, swir1gain, swir2gain)))
         offset += struct.calcsize(calibration_buffer_format)
 
-    #print(calibration_buffer)
+    # print(calibration_buffer)
     return calibration_buffer, offset
 
 
@@ -188,15 +187,13 @@ def parse_sig(asd, offset):
     sig = b''
     return sig, offset
 
-
 def parse_spectra(asd, offset, channels):
-    spec = np.array(struct.unpack_from('<{}d'.format(channels), asd, offset))
-    #try:
-    #     spec = np.array(struct.unpack_from('<{}d'.format(channels), asd, offset))
-    #except:
-    #    # if the data is float, not double
-    #    spec = np.array(struct.unpack_from('<{}f'.format(channels), asd, offset))
-    offset += (channels * 8)
+    try:
+        spec = np.array(struct.unpack_from('<{}d'.format(channels), asd, offset))
+    except:
+        # if the data is float, not double
+        spec = np.array(struct.unpack_from('<{}f'.format(channels), asd, offset))
+    offset += (channels * 8)  
     return spec, offset
 
 
@@ -235,23 +232,26 @@ class reader:
         self.wavelengths = np.arange(self.md.ch1_wave, self.md.ch1_wave + self.md.channels * self.md.wave1_step,
                                      self.md.wave1_step)
         self.spec, offset = parse_spectra(self.asd, 484, self.md.channels)
-        # print(self.spec)
-        reference_header, offset = parse_reference(self.asd, offset)
-        self.reference, offset = parse_spectra(self.asd, offset, self.md.channels)
-        # print(self.reference)
+        #print(self.spec)
+        try:
+            reference_header, offset = parse_reference(self.asd, offset)
+            self.reference, offset = parse_spectra(self.asd, offset, self.md.channels)
+            # print(self.reference)
 
-        self.classifier, offset = parse_classifier(self.asd, offset)
-        self.dependants, offset = parse_dependants(self.asd, offset)
-        self.calibration_header, offset = parse_calibration_header(self.asd, offset)
-        for hdr in self.calibration_header:  # Number of calibration buffers in the file.
-            if calibration_type[hdr[0]] == 'BASE':
-                self.calibration_base, offset = parse_spectra(self.asd, offset, self.md.channels)
-            elif calibration_type[hdr[0]] == 'LAMP':
-                self.calibration_lamp, offset = parse_spectra(self.asd, offset, self.md.channels)
-            elif calibration_type[hdr[0]] == 'FIBER':
-                self.calibration_fibre, offset = parse_spectra(self.asd, offset, self.md.channels)
-        # self.audit, offset = parse_audit_log(self.asd, offset)
-        # self.sig, offset = parse_sig(self.asd, offset)
+            self.classifier, offset = parse_classifier(self.asd, offset)
+            self.dependants, offset = parse_dependants(self.asd, offset)
+            self.calibration_header, offset = parse_calibration_header(self.asd, offset)
+            for hdr in self.calibration_header:  # Number of calibration buffers in the file.
+                if calibration_type[hdr[0]] == 'BASE':
+                    self.calibration_base, offset = parse_spectra(self.asd, offset, self.md.channels)
+                elif calibration_type[hdr[0]] == 'LAMP':
+                    self.calibration_lamp, offset = parse_spectra(self.asd, offset, self.md.channels)
+                elif calibration_type[hdr[0]] == 'FIBER':
+                    self.calibration_fibre, offset = parse_spectra(self.asd, offset, self.md.channels)
+            # self.audit, offset = parse_audit_log(self.asd, offset)
+            # self.sig, offset = parse_sig(self.asd, offset)
+        except:
+            pass
 
     def __getattr__(self, item):
         if item == 'reflectance':

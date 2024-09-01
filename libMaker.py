@@ -556,7 +556,10 @@ def copy_rename_ASD_files(fname_UPWINS_csv = 'C:\\ASD_files\\filenames_UPWINS_as
         fname_src = row['ASD fname'] 
         fname_base_src = row['ASD base_fname'] 
         fname_base_dst = row['ASD UPWINS base_fname'] 
-        shutil.copyfile(fname_src, source+fname_base_src)
+        try:
+            shutil.copyfile(fname_src, source+fname_base_src)
+        except:
+            pass
         shutil.copyfile(source+fname_base_src, destination+fname_base_dst)
 
 '''
