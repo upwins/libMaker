@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+
 # import functions from specdal: https://specdal.readthedocs.io/en/latest/
 import specdal
 # import functions from asdreader: https://github.com/ajtag/asdreader
@@ -11,6 +13,11 @@ import os
 import glob
 import shutil
 import pandas as pd
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+
+MONGO_DB_URI = os.getenv('MONGO_DB_URI')
 
 # codes for species with information and health\growth-stage\etc..
 plant_codes = {
@@ -34,8 +41,10 @@ growth_stage_codes = {
 	'E': ['Emergence (from seed)', 'E'],
 	'D': ['Dormant', 'D'],
 	'1G': ['Year 1 growth', '1G'],
+    '2G': ['Year 2 growth', '2G'],
 	'1F': ['Year 1 Flowering', '1F'],
-	'M': ['Mature', ' M']
+    'J': ['Juvenile', 'J'],
+	'M': ['Mature', 'M']
 }
 principal_part_codes = {  
     'MX': ['Mix', 'MX'],
@@ -54,7 +63,8 @@ health_codes = {
 	'H': ['Healthy', 'H'],
     'MH': ['Mix Dormant Healthy', 'MH'],
 	'DS': ['Drought Stress', 'DS'],
-	'SS': ['Salt Stress', 'SS'],
+	'SS': ['Salt Stress (soak)', 'SS'],
+    'SY': ['Salt Stress (spray)', 'SY'],
 	'S': ['Stress', 'S'],
     'LLRZ': ['LLRZ Lab Stress', 'LLRZ'],
 	'D': ['Dormant', 'D'],
@@ -390,17 +400,17 @@ def read(filepath):
         
         
     
-    # checking for loaction
-    if ('morven' in fname.lower()) or ('morven' in s.metadata['comment'].lower()):
+    # checking for location
+    if ('morven' in filepath.lower()) or ('morven' in s.metadata['comment'].lower()):
         s.metadata['location'] = 'Morven'
         
-    if ('allied' in fname.lower()) or ('allied' in s.metadata['comment'].lower()):
-        s.metadata['location'] = 'Lab'
+    if ('allied' in filepath.lower()) or ('allied' in s.metadata['comment'].lower()):
+        s.metadata['location'] = 'Allied'
         
     return s
 
 
-def search_for_ASD_files(source = 'C:\\', destination = 'C:\\ASD_files\\'):  
+def search_for_ASD_files(source = '', destination = ''):  
     # Creates a list of all ASD files stored on this computer
     fname_csv = destination+'filenames_asd.csv'
     
@@ -421,7 +431,7 @@ def search_for_ASD_files(source = 'C:\\', destination = 'C:\\ASD_files\\'):
     print(f'Filenames saved in {fname_csv}')
 
 
-def build_ASD_filename_UPWINS_convention_info(destination = 'C:\\ASD_files\\'):  
+def build_ASD_filename_UPWINS_convention_info(destination = ''):  
     # Reads a list of all ASD files on this computer from destination folder,
     # creates a dataframe with all the ASD filenames and corresponding 
     # UPWINS convention new names
@@ -643,7 +653,7 @@ Ilex	vomitoria	Yaupon Holly
 
 
 
-def build_UPWINS_ASD_database(destination = 'C:\\ASD_files\\'):  
+def build_UPWINS_ASD_database(destination = ''):  
     # Reads a list of all ASD files on this computer from destination folder,
     # creates a dataframe with all the ASD filenames and corresponding 
     # UPWINS convention new names
@@ -669,6 +679,9 @@ def build_UPWINS_ASD_database(destination = 'C:\\ASD_files\\'):
     df['datetime_readable'] = ''
     df['Instrument #'] = ''
     df = df[['ASD UPWINS base_fname', 'datetime_readable', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'growth_stage', 'health', 'location', 'comment', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD base_fname', 'ASD fname']]
+
+    # list of spectral data
+    data = []
 
     # iterate through all .asd file names and determine the UPWINS convention name
     # and metadata
@@ -751,7 +764,14 @@ def build_UPWINS_ASD_database(destination = 'C:\\ASD_files\\'):
         
         # fill in the basename for this ASD file
         df.at[index, 'Instrument #'] = str(s.metadata['instrument_num'])
-            
+
+        # Add spectrum to data list
+        record = {'ASD UPWINS base_fname':fname_new}
+        measurement = s.measurement.to_dict()
+        measurement = {str(k):v for k,v in measurement.items()}
+        record.update(measurement)
+        data.append(record)
+        
         #except:
         #    not_readable_fnames.append(filepath)
     
@@ -773,3 +793,80 @@ def build_UPWINS_ASD_database(destination = 'C:\\ASD_files\\'):
     # save the dataframe to a csv file
     df.to_csv(fname_UPWINS_csv, index=False)    
     print(f'Writing to {fname_UPWINS_csv} complete. There were {len(df)} unique files.')
+
+    # save spectra to csv
+    #df_data = pd.DataFrame.from_dict(data, orient='index')
+    #df_data.index.name = 'ASD UPWINS base_fname'
+    #df_data.to_csv('test.csv', index=True)
+
+    # list of dicts of metadata df
+    metadata = df.to_dict('records')
+    
+    # import to mongodb
+    mongoimport(metadata, data)
+
+def mongoimport(metadata, data):
+    
+    uri = MONGO_DB_URI
+
+    # Create a new client and connect to the server
+    client = MongoClient(uri, server_api=ServerApi('1'))
+
+    # Send a ping to confirm a successful connection
+    try:
+        client.admin.command('ping')
+        print("Pinged your deployment. You successfully connected to MongoDB!")
+    except Exception as e:
+        print(e)
+
+    db = client["upwins_db"]
+    metadata_collection_name = "metadata"
+    data_collection_name = "data"
+    spectral_library_view_name = "spectral_library"
+
+    metadata_collection = db[metadata_collection_name]
+    data_collection = db[data_collection_name]
+    spectral_library_view = db[spectral_library_view_name]
+
+    if metadata_collection_name in db.list_collection_names():
+        metadata_collection.drop()
+
+    metadata_collection.insert_many(metadata)
+    count = metadata_collection.count_documents({})
+    print("Metadata doc count: ", count)
+
+    if data_collection_name in db.list_collection_names():
+        data_collection.drop()
+
+    data_collection.insert_many(data)
+    count = data_collection.count_documents({})
+    print("Data doc count: ", count)
+
+    if spectral_library_view_name in db.list_collection_names():
+        spectral_library_view.drop()
+
+    pipeline = [
+        {
+            '$lookup': {
+                'from': 'data', 
+                'localField': 'ASD UPWINS base_fname', 
+                'foreignField': 'ASD UPWINS base_fname', 
+                'as': 'spectrum'
+            }
+        }, {
+            '$unwind': {
+                'path': '$spectrum'
+            }
+        }, {
+            '$project': {
+                '_id': 0, 
+                'spectrum._id': 0, 
+                'spectrum.ASD UPWINS base_fname': 0
+            }
+        }
+    ]
+
+    db.create_collection(spectral_library_view_name, viewOn=metadata_collection_name, pipeline=pipeline)
+    print("Spectral Library created.")
+
+    client.close()
