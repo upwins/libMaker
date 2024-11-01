@@ -397,15 +397,17 @@ def read(filepath):
         s.metadata['category'] = 'vegetation'
         s.metadata['sub-category'] = 'grass'
     
-        
-        
-    
+   
     # checking for location
     if ('morven' in filepath.lower()) or ('morven' in s.metadata['comment'].lower()):
         s.metadata['location'] = 'Morven'
         
     if ('allied' in filepath.lower()) or ('allied' in s.metadata['comment'].lower()):
         s.metadata['location'] = 'Allied'
+
+    # checking if collection is immediately after salt inundation
+    if ('after salt' in filepath.lower()):
+        s.metadata['comment'] = s.metadata['comment'] + "_after_salt_inundation"
         
     return s
 
@@ -785,6 +787,15 @@ def build_UPWINS_ASD_database(destination = ''):
     # note: dropping by duplicates in 'ASD UPWINS base_fname' should be sufficient since that has unique data-time (to the second) identifier,
     # but including the instrument # as well just in case.
     
+    print("Number of rows before dropping duplicates:", len(df))
+
+    # Identify duplicate rows
+    duplicates = df.duplicated(['ASD UPWINS base_fname','Instrument #'], keep=False)
+    
+    # Get duplicate rows
+    duplicate_rows = df[duplicates]
+    if (len(duplicate_rows) > 0): duplicate_rows.to_csv(destination+"duplicate_rows.csv", index=False)
+
     df = df.drop_duplicates(['ASD UPWINS base_fname','Instrument #'], keep='last')
     df = df.sort_values(['category', 'genus', 'species', 'DateTimeUniqueIdentifier'], ascending=[False, False, False, True])
     df = df.drop(columns=['index'])
@@ -794,12 +805,17 @@ def build_UPWINS_ASD_database(destination = ''):
     df.to_csv(fname_UPWINS_csv, index=False)    
     print(f'Writing to {fname_UPWINS_csv} complete. There were {len(df)} unique files.')
 
-    # save spectra to csv
-    #df_data = pd.DataFrame.from_dict(data, orient='index')
-    #df_data.index.name = 'ASD UPWINS base_fname'
-    #df_data.to_csv('test.csv', index=True)
+    df_data = pd.DataFrame.from_records(data)
+    df_data = df_data.drop_duplicates(['ASD UPWINS base_fname'], keep='last')
 
-    # list of dicts of metadata df
+    # save spectra to csv
+    #df_data.to_csv(destination+'data.csv', index=True)
+
+    data = df_data.to_dict('records')
+
+    print("Length of data list:", len(data))
+
+    # create list of dicts of metadata df
     metadata = df.to_dict('records')
     
     # import to mongodb
