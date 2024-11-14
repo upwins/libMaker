@@ -13,6 +13,7 @@ import os
 import glob
 import shutil
 import pandas as pd
+import numpy as np
 
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -70,9 +71,16 @@ health_codes = {
 	'D': ['Dormant', 'D'],
     'R': ['Rust', 'R']
 }
+
+flower_codes = { 
+	'FLG': ['Flowering', 'FLG'],
+    'FRG': ['Fruiting', 'FRG'],
+    "FFG": ['Fruiting and Flowering', 'FFG'],
+    'N': ['Neither', 'N']
+}
     
     
-def read(filepath):
+def read(filepath, jump_correct = False):
     # Reads a single ASD file with metadata.
     
     # check data
@@ -84,6 +92,22 @@ def read(filepath):
     s = specdal.Spectrum(filepath=filepath) 
     s_asdreader = asdreader.reader(filepath);
     fname = os.path.basename(filepath)
+
+    if (jump_correct):
+        wl = s.measurement.index
+
+        # Fix 1: shift 0<wl<1000 range up/down to smooth jump at 1000
+        i1 = np.where(wl==1000)[0][0]
+        if not np.isnan(s.measurement.iloc[i1]):
+            dp = ( ((s.measurement.iloc[i1+1]-s.measurement.iloc[i1+2]) + (s.measurement.iloc[i1-1]-s.measurement.iloc[i1]))/2 )
+            d1 = (s.measurement.iloc[i1+1]-s.measurement.iloc[i1])
+            s.measurement.iloc[:(i1+1)] = s.measurement.iloc[:(i1+1)] + dp + d1
+        # Fix 2: shift 1800<wl<2500 range up/down to smooth jump at 1800
+        i2 = np.where(wl==1800)[0][0]
+        if not np.isnan(s.measurement.iloc[i2]):
+            dp = ( ((s.measurement.iloc[i2+1]-s.measurement.iloc[i2+2]) + (s.measurement.iloc[i2-1]-s.measurement.iloc[i2]))/2 )
+            d1 = (s.measurement.iloc[i2+1]-s.measurement.iloc[i2])
+            s.measurement.iloc[(i2+1):] = s.measurement.iloc[(i2+1):] - dp - d1
     
     # Initial metadata population
     # compute a datetime string for the file name
@@ -99,7 +123,9 @@ def read(filepath):
     s.metadata['growth_stage_code'] = 'NA' 
     s.metadata['growth_stage_description'] = 'NA'   
     s.metadata['health_code'] = 'NA'    
-    s.metadata['health_description'] = 'NA'  
+    s.metadata['health_description'] = 'NA'
+    s.metadata['flower_code'] = 'NA'    
+    s.metadata['flower_description'] = 'NA'  
     s.metadata['genus'] = 'NA'    
     s.metadata['species'] = 'NA'      
     s.metadata['common_name'] = 'NA'       
@@ -118,6 +144,7 @@ def read(filepath):
             s.metadata['category'] = 'target_vegetation'
             s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX'] # (default value)
             s.metadata['health_description'], s.metadata['health_code'] = health_codes['H'] # (default value)
+            s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['N'] # (default value)
     # checking for specific informal or non - target species Genus_species code (ignore case)
     if ('beachgrass' in fname.lower()) or ('beach_grass' in fname.lower()):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Ammo_bre']
@@ -288,8 +315,21 @@ def read(filepath):
     if ('rust' in fname.lower()) or ('rust' in s.metadata['comment'].lower()):
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['R']
             
-        
-        
+    
+    # checking for flower codes
+    for key in flower_codes.keys():
+        if ('_'+key+'_' in fname) or ('_'+key+'0' in fname):
+            s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes[key]
+    
+    if ('_FL_0' in fname) or ('_FL0' in fname):
+        s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['FLG']
+    
+    if ('_FR_0' in fname) or ('_FR0' in fname):
+        s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['FRG']
+
+    if ('_FF_0' in fname) or ('_FF0' in fname):
+        s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['FFG']
+
     # checking for plant part codes
     for key in principal_part_codes.keys():
         if '_'+key+'_' in fname:
@@ -305,7 +345,7 @@ def read(filepath):
         s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['FL']
         
     if ('blade' in fname.lower()) or ('blade' in s.metadata['comment'].lower()):
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['B']
+        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
         
     if ('stalk' in fname.lower()) or ('stalk' in s.metadata['comment'].lower()):
         s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['St']
@@ -676,11 +716,12 @@ def build_UPWINS_ASD_database(destination = ''):
     df['principal_part'] = ''
     df['growth_stage'] = ''
     df['health'] = ''
+    df['flower'] = ''
     df['location'] = ''
     df['DateTimeUniqueIdentifier'] = ''
     df['datetime_readable'] = ''
     df['Instrument #'] = ''
-    df = df[['ASD UPWINS base_fname', 'datetime_readable', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'growth_stage', 'health', 'location', 'comment', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD base_fname', 'ASD fname']]
+    df = df[['ASD UPWINS base_fname', 'datetime_readable', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'growth_stage', 'health', 'flower', 'location', 'comment', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD base_fname', 'ASD fname']]
 
     # list of spectral data
     data = []
@@ -694,7 +735,7 @@ def build_UPWINS_ASD_database(destination = ''):
         
         #try:
         # read the spectrum information
-        s = read(filepath)
+        s = read(filepath, True)
 
         # create the new filename using the UPWINS convention
         if s.metadata['category'] == 'target_vegetation':
@@ -709,6 +750,8 @@ def build_UPWINS_ASD_database(destination = ''):
                     s.metadata['growth_stage_code']+\
                     '_'+\
                     s.metadata['health_code']+\
+                    '_'+\
+                    s.metadata['flower_code']+\
                     '_'+\
                     s.metadata['DateTimeUniqueIdentifier']+\
                     '.asd'
@@ -754,6 +797,9 @@ def build_UPWINS_ASD_database(destination = ''):
         
         # fill in the health_code for this ASD file
         df.at[index, 'health'] = str(s.metadata['health_code'])
+
+         # fill in the health_code for this ASD file
+        df.at[index, 'flower'] = str(s.metadata['flower_code'])
         
         # fill in the location for this ASD file
         df.at[index, 'location'] = str(s.metadata['location'])
@@ -766,7 +812,7 @@ def build_UPWINS_ASD_database(destination = ''):
         
         # fill in the basename for this ASD file
         df.at[index, 'Instrument #'] = str(s.metadata['instrument_num'])
-
+        
         # Add spectrum to data list
         record = {'ASD UPWINS base_fname':fname_new}
         measurement = s.measurement.to_dict()
