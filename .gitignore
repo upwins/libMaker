@@ -1,5 +1,5 @@
-/data/
-/.devcontainer/
-/.env
-/asd/
+data/
+.devcontainer/
+.env
+asd/
 __pycache__
