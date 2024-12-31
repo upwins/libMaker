@@ -36,50 +36,63 @@ plant_codes = {
     'Iva_fru_': ['Iva', 'frutescens', 'Jesuits Bark ', 'shrub', 'https://en.wikipedia.org/wiki/Iva_frutescens'],
     'Ilex_vom': ['Ilex', 'vomitoria', 'Yaupon Holly', 'evergreen shrub', 'https://en.wikipedia.org/wiki/Ilex_vomitoria']
 }  
-growth_stage_codes = {  
+age_codes = {  
     'PE': ['Post Germination Emergence', 'PE'],
-	'RE': ['Re-emergence', 'RE'],
-	'E': ['Emergence (from seed)', 'E'],
+	#'RE': ['Re-emergence', 'RE'],
+    'RE': ['Year 1 growth', '1G'],
+	#'E': ['Emergence (from seed)', 'E'],
+    'E': ['Post Germination Emergence', 'PE'],
 	'D': ['Dormant', 'D'],
 	'1G': ['Year 1 growth', '1G'],
     '2G': ['Year 2 growth', '2G'],
-	'1F': ['Year 1 Flowering', '1F'],
+	#'1F': ['Year 1 Flowering', '1F'],
     'J': ['Juvenile', 'J'],
 	'M': ['Mature', 'M']
 }
 principal_part_codes = {  
     'MX': ['Mix', 'MX'],
-	'SA': ['Shoot Apex', 'SA'],
-	'L': ['Leaf', 'L'],
-	'IS': ['Internode Stem', 'IS'],
-	'CS': ['Colar Sprout', 'CS'],
-	'RS': ['Root Sprout', 'RS'],
+    'S': ['Seed', 'SE'],
+	#'SA': ['Shoot Apex', 'SA'],
+    'SA': ['Internode Stem', 'ST'],
+	'L': ['Leaf/Blade', 'L'],
+	#'IS': ['Internode Stem', 'IS'],
+    'ST': ['Internode Stem', 'ST'],
+    'SP': ['Sprout', 'SP'],
+	#'CS': ['Colar Sprout', 'CS'],
+    'CS': ['Sprout', 'SP'],
+	#'RS': ['Root Sprout', 'RS'],
+    'RS': ['Sprout', 'SP'],
 	'LG': ['Lignin', 'LG'],
 	'FL': ['Flower', 'FL'],
-	'B': ['Blade', 'B'],
-	'S': ['Seed', 'S'],
-	'St': ['Stalk', 'St']
+    #'B': ['Blade', 'B'],
+	'B': ['Leaf/Blade', 'L'],
+    'FR': ['Fruit', 'FR'],
+	#'S': ['Seed', 'SE'], #moved above because 'S' is in other codes; this is an old code
+    'SE': ['Seed', 'SE'],
+	#'St': ['Stalk', 'St']
 }
-health_codes = { 
-	'H': ['Healthy', 'H'],
-    'MH': ['Mix Dormant Healthy', 'MH'],
+health_codes = {
+    'MH': ['Healthy/Unhealthy Mix', 'MH'],
 	'DS': ['Drought Stress', 'DS'],
 	'SS': ['Salt Stress (soak)', 'SS'],
     'SY': ['Salt Stress (spray)', 'SY'],
-	'S': ['Stress', 'S'],
+	'S': ['Stressed', 'S'],
     'LLRZ': ['LLRZ Lab Stress', 'LLRZ'],
-	'D': ['Dormant', 'D'],
-    'R': ['Rust', 'R']
+	#'D': ['Dormant', 'D'],
+    'R': ['Rust', 'R'],
+    'H': ['Healthy', 'H']
 }
 
-flower_codes = { 
+bloom_codes = { 
 	'FLG': ['Flowering', 'FLG'],
     'FRG': ['Fruiting', 'FRG'],
     "FFG": ['Fruiting and Flowering', 'FFG'],
     'N': ['Neither', 'N']
 }
     
-    
+
+files_with_non_readable_part_codes = []
+
 def read(filepath, jump_correct = False):
     # Reads a single ASD file with metadata.
     
@@ -118,22 +131,22 @@ def read(filepath, jump_correct = False):
     s.metadata['datetime_readable'] = s_asdreader.md.save_time.strftime(format_string)    
     s.metadata['instrument_num'] = s_asdreader.md.instrument_num    
     s.metadata['comment'] = s_asdreader.md.comment.decode("utf-8")
-    s.metadata['principal_part_code'] = 'NA'
-    s.metadata['principal_part_description'] = 'NA'
-    s.metadata['growth_stage_code'] = 'NA' 
-    s.metadata['growth_stage_description'] = 'NA'   
-    s.metadata['health_code'] = 'NA'    
-    s.metadata['health_description'] = 'NA'
-    s.metadata['flower_code'] = 'NA'    
-    s.metadata['flower_description'] = 'NA'  
-    s.metadata['genus'] = 'NA'    
-    s.metadata['species'] = 'NA'      
-    s.metadata['common_name'] = 'NA'       
-    s.metadata['category'] = 'NA'            
-    s.metadata['sub-category'] = 'NA'     
-    s.metadata['location'] = 'NA' 
+    s.metadata['principal_part_code'] = 'N'
+    s.metadata['principal_part_description'] = 'N'
+    s.metadata['age_code'] = 'N' 
+    s.metadata['age_description'] = 'N'   
+    s.metadata['health_code'] = 'N'    
+    s.metadata['health_description'] = 'N'
+    s.metadata['bloom_code'] = 'N'    
+    s.metadata['bloom_description'] = 'N'  
+    s.metadata['genus'] = 'N'    
+    s.metadata['species'] = 'N'      
+    s.metadata['common_name'] = 'N'       
+    s.metadata['category'] = 'N'            
+    s.metadata['sub-category'] = 'N'     
+    s.metadata['location'] = 'N' 
     s.metadata['filenum'] = fname[-9:-4]
-    s.metadata['url'] = 'NA'    
+    s.metadata['url'] = 'N'    
     
     
     # checking for specific target vegetation species
@@ -142,162 +155,121 @@ def read(filepath, jump_correct = False):
         if fname[:8].lower()==key.lower():
             s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes[key]
             s.metadata['category'] = 'target_vegetation'
-            s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX'] # (default value)
-            s.metadata['health_description'], s.metadata['health_code'] = health_codes['H'] # (default value)
-            s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['N'] # (default value)
+            #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX'] # (default value)
+            #add age default?
+            #s.metadata['health_description'], s.metadata['health_code'] = health_codes['H'] # (default value)
+            #s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['N'] # (default value)
     # checking for specific informal or non - target species Genus_species code (ignore case)
     if ('beachgrass' in fname.lower()) or ('beach_grass' in fname.lower()):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Ammo_bre']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['B']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['B']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'chamdecrista_fasc' in fname.lower():
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
+    if any(x in fname.lower() for x in ['chamdecrista_fasc', 'partridge']):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Cham_fas']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'partridgepea' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Cham_fas']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
-        s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'panicum_amarum' in fname.lower():
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
+    if any(x in fname.lower() for x in ['panicum_amarum', 'coastalpanic', 'coastal-panic']):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Pani_ama']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['B']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['B']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'coastalpanicum' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Pani_ama']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['B']
-        s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-        s.metadata['comment'] = s.metadata['comment']+'[not certain of species - check that spectrum is a match]'
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
+        if any(x in fname.lower() for x in ['coastalpanic', 'coastal-panic']):
+            s.metadata['comment'] = s.metadata['comment']+'[not certain of species - check that spectrum is a match]'
     if 'ilexvomitoria' in fname.lower():
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Ilex_vom']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'panicumvirgatum' in fname.lower():
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
+    if any(x in fname.lower() for x in ['panicumvirgatum', 'panicum_vergatum', 'panicum_virgatum']):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Pani_vir']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'chasmanthiumlatifolium' in fname.lower():
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)    
+    if any(x in fname.lower() for x in ['chasmanthiumlatifolium', 'chasmanthium_lati', 'chasmanthiu_latifoli', 'grass_coolseason']):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Chas_lat']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'chasmanthium_lati' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Chas_lat']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
-        s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'chasmanthiu_latifoli' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Chas_lat']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
-        s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'panicum_vergatum' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Pani_vir']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
-        s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'panicum_virgatum' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Pani_vir']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
-        s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
     if 'solidago_semp' in fname.lower():
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Soli_sem']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
     if 'iva_frutescens' in fname.lower():
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Iva_fru_']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'baccharis_halimifolia' in fname.lower():
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
+    if any(x in fname.lower() for x in ['baccharis_halimifolia', 'baccharis_halimif']):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Bacc_hal']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-    if 'baccharis_halimif' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Bacc_hal']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
-        s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
     if 'solidago_rugosa' in fname.lower():
-        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Bacc_hal']
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+        s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Soli_rug']
+        #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
-        s.metadata['health_code'] = 'H'  # (default value)    
-        s.metadata['health_description'] = 'Healthy'  # (default value)
-        
-        
+        #s.metadata['health_code'] = 'H'  # (default value)    
+        #s.metadata['health_description'] = 'Healthy'  # (default value)
         
     
-    # checking for growth stage codes
-    for key in growth_stage_codes.keys():
+    # checking for age codes
+    for key in age_codes.keys():
         if '_'+key+'_' in fname:
-            s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes[key]
+            s.metadata['age_description'], s.metadata['age_code'] = age_codes[key]
     
     if 'mix of senesced and green' in s.metadata['comment'].lower():
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['MH']
     
-    if ('senesced portion' in fname.lower()) or ('greenAndSenesced' in s.metadata['comment'].lower()):
+    if ('senesced portion' in fname.lower()) or ('greenandsenesced' in s.metadata['comment'].lower()):
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['MH']
     
     if ('y1g' in fname.lower()) or ('y1g' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['1G']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['1G']
             
     if ('dormant' in fname.lower()) or ('dormant' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['D']
-        s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['D']
+        #s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
             
     if ('scenesed' in fname.lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['D']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['D']
             
     if ('_scenesced0' in fname.lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['D']
-        s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['D']
+        #s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
         
     if ('early-season-growth' in fname.lower()) or ('early-season-growth' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['RE']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['RE']
             
-    if ('senesced portion' in fname.lower()) or ('senesced portion' in s.metadata['comment'].lower()):
-        s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
+    #if ('senesced portion' in fname.lower()) or ('senesced portion' in s.metadata['comment'].lower()):
+        #s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
     
     if ('mature' in fname.lower()) or ('mature' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['M']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['M']
          
     if ('midseaseon' in fname.lower()) or ('midseaseon' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['M']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['M']
         
     if ('midseason' in fname.lower()) or ('midseason' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['M']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['M']
     
     if ('emergence' in fname.lower()) or ('emergence' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['E']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['E']
          
     if ('sprout' in fname.lower()) or ('sprout' in s.metadata['comment'].lower()):
-        s.metadata['growth_stage_description'], s.metadata['growth_stage_code'] = growth_stage_codes['E']
+        s.metadata['age_description'], s.metadata['age_code'] = age_codes['E']
+        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['SP']
             
             	
     
@@ -305,7 +277,14 @@ def read(filepath, jump_correct = False):
     for key in health_codes.keys():
         if ('_'+key+'_' in fname) or ('_'+key+'0' in fname):
             s.metadata['health_description'], s.metadata['health_code'] = health_codes[key]
-            
+    
+    if ('_W_' in fname) or ('_W0' in fname):
+            s.metadata['health_description'] = 'N'
+            s.metadata['health_code'] = 'N'
+    
+    if ('healthy' in fname.lower()):
+        s.metadata['health_description'], s.metadata['health_code'] = health_codes['H']
+
     if ('stress' in fname.lower()) or ('stress' in s.metadata['comment'].lower()):
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['S']
     
@@ -316,48 +295,65 @@ def read(filepath, jump_correct = False):
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['R']
             
     
-    # checking for flower codes
-    for key in flower_codes.keys():
+    # checking for bloom codes
+    for key in bloom_codes.keys():
         if ('_'+key+'_' in fname) or ('_'+key+'0' in fname):
-            s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes[key]
+            s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes[key]
     
     if ('_FL_0' in fname) or ('_FL0' in fname):
-        s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['FLG']
+        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FLG']
     
     if ('_FR_0' in fname) or ('_FR0' in fname):
-        s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['FRG']
+        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FRG']
 
     if ('_FF_0' in fname) or ('_FF0' in fname):
-        s.metadata['flower_description'], s.metadata['flower_code'] = flower_codes['FFG']
+        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FFG']
 
+    
     # checking for plant part codes
+    part_code = 'N'
+    try:
+        part_code = fname.split('_', 3)[2]
+    except:
+        files_with_non_readable_part_codes.append(filepath)
+        #pass
+
     for key in principal_part_codes.keys():
-        if '_'+key+'_' in fname:
+        #if '_'+key+'_' in fname:
+        #    s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes[key]
+        if key in part_code:
             s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes[key]
             
     if ('seedhead' in fname.lower()) or ('seedhead' in s.metadata['comment'].lower()):
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['S']
+        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['SE']
             
     if ('leaf' in fname.lower()) or ('leaf' in s.metadata['comment'].lower()):
         s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
             
-    if ('flower' in fname.lower()) or ('flower' in s.metadata['comment'].lower()):
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['FL']
-        
-    if ('blade' in fname.lower()) or ('blade' in s.metadata['comment'].lower()):
+    if ('flower' in fname.lower()):
+        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FLG']
+        if ('flower' in s.metadata['comment'].lower()):
+            s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['FL']
+        if ('leav' in s.metadata['comment'].lower()):
+            s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
+            if ('flower' in s.metadata['comment'].lower()):
+                s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
+
+
+    if ('blad' in fname.lower()) or ('blad' in s.metadata['comment'].lower()):
         s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
         
     if ('stalk' in fname.lower()) or ('stalk' in s.metadata['comment'].lower()):
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['St']
+        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['ST']
         
     if ('stem' in fname.lower()) or ('stem' in s.metadata['comment'].lower()):
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['St']
+        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['ST']
         
     if '_mix0' in fname.lower():
         s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         
     if ('bark' in fname.lower()) or ('bark' in s.metadata['comment'].lower()):
-        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['St']
+        s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['LG']
         
 
 
@@ -413,7 +409,7 @@ def read(filepath, jump_correct = False):
         s.metadata['location'] = 'Morven'
     
     if ('vegetation' in fname.lower()) or ('timothy' in s.metadata['comment'].lower()):
-        if s.metadata['category'] == 'NA':
+        if s.metadata['category'] == 'N':
             s.metadata['category'] = 'vegetation'
         
     if ('mugwart' in fname.lower()) or ('mugwart' in s.metadata['comment'].lower()):
@@ -442,13 +438,13 @@ def read(filepath, jump_correct = False):
     if ('morven' in filepath.lower()) or ('morven' in s.metadata['comment'].lower()):
         s.metadata['location'] = 'Morven'
         
-    if ('allied' in filepath.lower()) or ('allied' in s.metadata['comment'].lower()):
+    if ('allied' in filepath.lower()) or ('control lab' in filepath.lower()) or ('allied' in s.metadata['comment'].lower()):
         s.metadata['location'] = 'Allied'
 
     # checking if collection is immediately after salt inundation
     if ('after salt' in filepath.lower()):
         s.metadata['comment'] = s.metadata['comment'] + "_after_salt_inundation"
-        
+
     return s
 
 
@@ -492,12 +488,12 @@ def build_ASD_filename_UPWINS_convention_info(destination = ''):
     df['genus'] = ''
     df['species'] = ''
     df['principal_part'] = ''
-    df['growth_stage'] = ''
+    df['age'] = ''
     df['health'] = ''
     df['location'] = ''
     df['DateTimeUniqueIdentifier'] = ''
     df['Instrument #'] = ''
-    df = df[['ASD base_fname', 'comment', 'ASD UPWINS base_fname', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'growth_stage', 'health', 'location', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD fname']]
+    df = df[['ASD base_fname', 'comment', 'ASD UPWINS base_fname', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'age', 'health', 'location', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD fname']]
 
     # iterate through all .asd file names and determine the UPWINS convention name
     # and metadata
@@ -520,7 +516,7 @@ def build_ASD_filename_UPWINS_convention_info(destination = ''):
                     '_'+\
                     s.metadata['principal_part_code']+\
                     '_'+\
-                    s.metadata['growth_stage_code']+\
+                    s.metadata['age_code']+\
                     '_'+\
                     s.metadata['health_code']+\
                     '_'+\
@@ -564,7 +560,7 @@ def build_ASD_filename_UPWINS_convention_info(destination = ''):
         df.at[index, 'principal_part'] = str(s.metadata['principal_part_code'])
         
         # fill in the age_code for this ASD file
-        df.at[index, 'growth_stage'] = str(s.metadata['growth_stage_code'])
+        df.at[index, 'age'] = str(s.metadata['age_code'])
         
         # fill in the health_code for this ASD file
         df.at[index, 'health'] = str(s.metadata['health_code'])
@@ -581,11 +577,11 @@ def build_ASD_filename_UPWINS_convention_info(destination = ''):
         #except:
         #    not_readable_fnames.append(filepath)
     
-    with open(fname_not_readable_csv, 'w') as f:
-        for filepath in not_readable_fnames:
-            # write the filepath to the output csv file
-            f.write(filepath+'\n') 
-    f.close()
+    # with open(fname_not_readable_csv, 'w') as f:
+    #     for filepath in not_readable_fnames:
+    #         # write the filepath to the output csv file
+    #         f.write(filepath+'\n') 
+    # f.close()
     
     # drop any files that have duplicate values in 'ASD UPWINS base_fname' and 'Instrument #'
     # note: dropping by duplicates in 'ASD UPWINS base_fname' should be sufficient since that has unique data-time (to the second) identifier,
@@ -701,7 +697,9 @@ def build_UPWINS_ASD_database(destination = ''):
     # UPWINS convention new names
     fname_not_readable_csv = destination+'filenames_not_readable.csv'
     fname_csv = destination+'filenames_asd.csv'   
-    fname_UPWINS_csv = destination+'UPWINS_ASD_database.csv'    
+    fname_UPWINS_csv = destination+'UPWINS_ASD_database.csv'
+    part_code_not_readable_csv = destination+'filenames_part_code_not_readable.csv'
+    files_to_drop_csv = destination+'files_to_drop.csv'
     print(f'Adding UPWINS convention filenames and metadata to {fname_csv}') 
     
     # create the dataFrame, starting with the file names in fname_csv
@@ -714,14 +712,14 @@ def build_UPWINS_ASD_database(destination = ''):
     df['genus'] = ''
     df['species'] = ''
     df['principal_part'] = ''
-    df['growth_stage'] = ''
+    df['age'] = ''
     df['health'] = ''
-    df['flower'] = ''
+    df['bloom'] = ''
     df['location'] = ''
     df['DateTimeUniqueIdentifier'] = ''
     df['datetime_readable'] = ''
     df['Instrument #'] = ''
-    df = df[['ASD UPWINS base_fname', 'datetime_readable', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'growth_stage', 'health', 'flower', 'location', 'comment', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD base_fname', 'ASD fname']]
+    df = df[['ASD UPWINS base_fname', 'datetime_readable', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'age', 'health', 'bloom', 'location', 'comment', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD base_fname', 'ASD fname']]
 
     # list of spectral data
     data = []
@@ -730,6 +728,9 @@ def build_UPWINS_ASD_database(destination = ''):
     # and metadata
     not_readable_fnames = []
     df = df.reset_index()  # make sure indexes pair with number of rows
+
+    rows_to_drop = []
+
     for index, row in df.iterrows():
         filepath = row['ASD fname']
         
@@ -747,88 +748,112 @@ def build_UPWINS_ASD_database(destination = ''):
                     '_'+\
                     s.metadata['principal_part_code']+\
                     '_'+\
-                    s.metadata['growth_stage_code']+\
+                    s.metadata['age_code']+\
                     '_'+\
                     s.metadata['health_code']+\
                     '_'+\
-                    s.metadata['flower_code']+\
+                    s.metadata['bloom_code']+\
                     '_'+\
                     s.metadata['DateTimeUniqueIdentifier']+\
                     '.asd'
-        else:
-            fname_new = 'UPWINS'+\
-                    '_'+\
-                    s.metadata['category']+\
-                    '_'+\
-                    s.metadata['sub-category']+\
-                    '_'+\
-                    s.metadata['location']+\
-                    '_'+\
-                    s.metadata['DateTimeUniqueIdentifier']+\
-                    '.asd'
+        # else:
+        #     fname_new = 'UPWINS'+\
+        #             '_'+\
+        #             s.metadata['category']+\
+        #             '_'+\
+        #             s.metadata['sub-category']+\
+        #             '_'+\
+        #             s.metadata['location']+\
+        #             '_'+\
+        #             s.metadata['DateTimeUniqueIdentifier']+\
+        #             '.asd'
             
         
-        # fill in the basename for this ASD file
-        df.at[index, 'ASD base_fname'] = os.path.basename(filepath)
-        
-        # fill in the ASD UPWINS base_fname for this ASD file
-        df.at[index, 'ASD UPWINS base_fname'] = fname_new
-        
-        # fill in the category for this ASD file
-        df.at[index, 'category'] = str(s.metadata['category'])
-        
-        # fill in the category for this ASD file
-        df.at[index, 'sub-category'] = str(s.metadata['sub-category'])
-        
-        # fill in the comment for this ASD file
-        df.at[index, 'comment'] = str(s.metadata['comment'])
-        
-        # fill in the genus for this ASD file
-        df.at[index, 'genus'] = str(s.metadata['genus'])
-        
-        # fill in the species for this ASD file
-        df.at[index, 'species'] = str(s.metadata['species'])
-        
-        # fill in the principal_part_code for this ASD file
-        df.at[index, 'principal_part'] = str(s.metadata['principal_part_code'])
-        
-        # fill in the age_code for this ASD file
-        df.at[index, 'growth_stage'] = str(s.metadata['growth_stage_code'])
-        
-        # fill in the health_code for this ASD file
-        df.at[index, 'health'] = str(s.metadata['health_code'])
+            # fill in the basename for this ASD file
+            df.at[index, 'ASD base_fname'] = os.path.basename(filepath)
+            
+            # fill in the ASD UPWINS base_fname for this ASD file
+            df.at[index, 'ASD UPWINS base_fname'] = fname_new
+            
+            # fill in the category for this ASD file
+            df.at[index, 'category'] = str(s.metadata['category'])
+            
+            # fill in the category for this ASD file
+            df.at[index, 'sub-category'] = str(s.metadata['sub-category'])
+            
+            # fill in the comment for this ASD file
+            df.at[index, 'comment'] = str(s.metadata['comment'])
+            
+            # fill in the genus for this ASD file
+            df.at[index, 'genus'] = str(s.metadata['genus'])
+            
+            # fill in the species for this ASD file
+            df.at[index, 'species'] = str(s.metadata['species'])
+            
+            # fill in the principal_part_code for this ASD file
+            df.at[index, 'principal_part'] = str(s.metadata['principal_part_code'])
+            
+            # fill in the age_code for this ASD file
+            df.at[index, 'age'] = str(s.metadata['age_code'])
+            
+            # fill in the health_code for this ASD file
+            df.at[index, 'health'] = str(s.metadata['health_code'])
 
-         # fill in the health_code for this ASD file
-        df.at[index, 'flower'] = str(s.metadata['flower_code'])
+            # fill in the health_code for this ASD file
+            df.at[index, 'bloom'] = str(s.metadata['bloom_code'])
+            
+            # fill in the location for this ASD file
+            df.at[index, 'location'] = str(s.metadata['location'])
+            
+            # fill in the DateTimeUniqueIdentifier for this ASD file
+            df.at[index, 'DateTimeUniqueIdentifier'] = str(s.metadata['DateTimeUniqueIdentifier'])
+            
+            # fill in the DateTimeUniqueIdentifier for this ASD file
+            df.at[index, 'datetime_readable'] = str(s.metadata['datetime_readable'])
+            
+            # fill in the basename for this ASD file
+            df.at[index, 'Instrument #'] = str(s.metadata['instrument_num'])
+            
+            # Add spectrum to data list
+            record = {'ASD UPWINS base_fname':fname_new}
+            measurement = s.measurement.to_dict()
+            measurement = {str(k):v for k,v in measurement.items()}
+            record.update(measurement)
+            data.append(record)
         
-        # fill in the location for this ASD file
-        df.at[index, 'location'] = str(s.metadata['location'])
-        
-        # fill in the DateTimeUniqueIdentifier for this ASD file
-        df.at[index, 'DateTimeUniqueIdentifier'] = str(s.metadata['DateTimeUniqueIdentifier'])
-        
-        # fill in the DateTimeUniqueIdentifier for this ASD file
-        df.at[index, 'datetime_readable'] = str(s.metadata['datetime_readable'])
-        
-        # fill in the basename for this ASD file
-        df.at[index, 'Instrument #'] = str(s.metadata['instrument_num'])
-        
-        # Add spectrum to data list
-        record = {'ASD UPWINS base_fname':fname_new}
-        measurement = s.measurement.to_dict()
-        measurement = {str(k):v for k,v in measurement.items()}
-        record.update(measurement)
-        data.append(record)
+        else:
+            rows_to_drop.append((index, filepath))
         
         #except:
         #    not_readable_fnames.append(filepath)
+    
+    indices_to_drop, files_to_drop = zip(*rows_to_drop)
+    indices_to_drop = list(indices_to_drop)
+
+    with open(files_to_drop_csv, 'w') as f:
+        for filepath in files_to_drop:
+            # write the filepath to the output csv file
+            f.write(filepath+'\n') 
+    f.close()
     
     with open(fname_not_readable_csv, 'w') as f:
         for filepath in not_readable_fnames:
             # write the filepath to the output csv file
             f.write(filepath+'\n') 
     f.close()
+
+    with open(part_code_not_readable_csv, 'w') as f:
+        for filepath in files_with_non_readable_part_codes:
+            # write the filepath to the output csv file
+            f.write(filepath+'\n') 
+    f.close()
     
+    # drop files that are not target vegetation
+    print("Number of rows before dropping non-target_vegetation:", len(df))
+    
+    df.drop(indices_to_drop, inplace=True)
+    print("Number of rows dropped:", len(indices_to_drop))
+
     # drop any files that have duplicate values in 'ASD UPWINS base_fname' and 'Instrument #'
     # note: dropping by duplicates in 'ASD UPWINS base_fname' should be sufficient since that has unique data-time (to the second) identifier,
     # but including the instrument # as well just in case.
