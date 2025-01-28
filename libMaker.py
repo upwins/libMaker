@@ -38,8 +38,8 @@ plant_codes = {
 }  
 age_codes = {  
     'PE': ['Post Germination Emergence', 'PE'],
-	#'RE': ['Re-emergence', 'RE'],
-    'RE': ['Year 1 growth', '1G'],
+	'RE': ['Re-emergence', 'RE'],
+    #'RE': ['Year 1 growth', '1G'],
 	#'E': ['Emergence (from seed)', 'E'],
     'E': ['Post Germination Emergence', 'PE'],
 	'D': ['Dormant', 'D'],
@@ -221,8 +221,8 @@ def read(filepath, jump_correct = False):
         #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX']
         s.metadata['category'] = 'target_vegetation'
         #s.metadata['health_code'] = 'H'  # (default value)    
-        #s.metadata['health_description'] = 'Healthy'  # (default value)
-        
+        #s.metadata['health_description'] = 'Healthy'  # (default value)     
+
     
     # checking for age codes
     for key in age_codes.keys():
@@ -270,9 +270,7 @@ def read(filepath, jump_correct = False):
     if ('sprout' in fname.lower()) or ('sprout' in s.metadata['comment'].lower()):
         s.metadata['age_description'], s.metadata['age_code'] = age_codes['E']
         s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['SP']
-            
-            	
-    
+              
     # checking for health codes
     for key in health_codes.keys():
         if ('_'+key+'_' in fname) or ('_'+key+'0' in fname):
@@ -445,8 +443,28 @@ def read(filepath, jump_correct = False):
     if ('after salt' in filepath.lower()):
         s.metadata['comment'] = s.metadata['comment'] + "_after_salt_inundation"
 
+
+    # checking for bp (bifurcated probe) in comments for collections before Allied_01_27_2025
+    if ('bp' == s.metadata['comment'].lower()) and (s.metadata['DateTimeUniqueIdentifier'] < '20250127_000000'):
+        if (('L' == s.metadata['principal_part_code']) and ('RE' != s.metadata['age_code'])) or ('MX' == s.metadata['principal_part_code']):
+            s.metadata['comment'] = ''
+
+    # updating bp for collection: Allied_01_27_2025
+    if (s.metadata['DateTimeUniqueIdentifier'] >= '20250127_151411') and (s.metadata['DateTimeUniqueIdentifier'] < '20250128_000000'):
+        s.metadata['comment'] = 'bp'
+
     return s
 
+def replace_str_in_filenames(directory="", old_str="", new_str=""):
+    count = 0
+    for filename in os.listdir(directory):
+        filepath = os.path.join(directory, filename)
+        newpath = filepath.replace(old_str, new_str)
+        if newpath != filepath:
+            os.rename(filepath, newpath)
+            count = count + 1
+    
+    print(f"{count} filenames replaced.")
 
 def search_for_ASD_files(source = '', destination = ''):  
     # Creates a list of all ASD files stored on this computer
@@ -691,7 +709,7 @@ Ilex	vomitoria	Yaupon Holly
 
 
 
-def build_UPWINS_ASD_database(destination = ''):  
+def build_UPWINS_ASD_database(destination = '', DeployToMongoDB = False):  
     # Reads a list of all ASD files on this computer from destination folder,
     # creates a dataframe with all the ASD filenames and corresponding 
     # UPWINS convention new names
@@ -868,7 +886,8 @@ def build_UPWINS_ASD_database(destination = ''):
     if (len(duplicate_rows) > 0): duplicate_rows.to_csv(destination+"duplicate_rows.csv", index=False)
 
     df = df.drop_duplicates(['ASD UPWINS base_fname','Instrument #'], keep='last')
-    df = df.sort_values(['category', 'genus', 'species', 'DateTimeUniqueIdentifier'], ascending=[False, False, False, True])
+    #df = df.sort_values(['category', 'genus', 'species', 'DateTimeUniqueIdentifier'], ascending=[False, False, False, True])
+    df = df.sort_values(['DateTimeUniqueIdentifier'], ascending=[False])
     df = df.drop(columns=['index'])
     df = df.drop(columns=['ASD fname'])
     
@@ -890,7 +909,8 @@ def build_UPWINS_ASD_database(destination = ''):
     metadata = df.to_dict('records')
     
     # import to mongodb
-    mongoimport(metadata, data)
+    if DeployToMongoDB:
+        mongoimport(metadata, data)
 
 def mongoimport(metadata, data):
     

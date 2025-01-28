@@ -3,7 +3,7 @@
 	"name": "python3_libmaker",
 	"build": { 
 		"context": "..",
-		"dockerfile": "../Dockerfile"
+		"dockerfile": "Dockerfile"
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
