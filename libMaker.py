@@ -38,11 +38,11 @@ plant_codes = {
 }  
 age_codes = {  
     'PE': ['Post Germination Emergence', 'PE'],
-	'RE': ['Re-emergence', 'RE'],
+	#'RE': ['Re-emergence', 'RE'],
     #'RE': ['Year 1 growth', '1G'],
 	#'E': ['Emergence (from seed)', 'E'],
     'E': ['Post Germination Emergence', 'PE'],
-	'D': ['Dormant', 'D'],
+	#'D': ['Dormant', 'D'],
 	'1G': ['Year 1 growth', '1G'],
     '2G': ['Year 2 growth', '2G'],
 	#'1F': ['Year 1 Flowering', '1F'],
@@ -51,7 +51,7 @@ age_codes = {
 }
 principal_part_codes = {  
     'MX': ['Mix', 'MX'],
-    'S': ['Seed', 'SE'],
+    #'S': ['Seed', 'SE'],
 	#'SA': ['Shoot Apex', 'SA'],
     'SA': ['Internode Stem', 'ST'],
 	'L': ['Leaf/Blade', 'L'],
@@ -83,8 +83,10 @@ health_codes = {
     'H': ['Healthy', 'H']
 }
 
-bloom_codes = { 
-	'FLG': ['Flowering', 'FLG'],
+lifecycle_codes = { 
+	'D': ['Dormant', 'D'],
+    'RE': ['Re-emergence', 'RE'],
+    'FLG': ['Flowering', 'FLG'],
     'FRG': ['Fruiting', 'FRG'],
     "FFG": ['Fruiting and Flowering', 'FFG'],
     'N': ['Neither', 'N']
@@ -137,8 +139,8 @@ def read(filepath, jump_correct = False):
     s.metadata['age_description'] = 'N'   
     s.metadata['health_code'] = 'N'    
     s.metadata['health_description'] = 'N'
-    s.metadata['bloom_code'] = 'N'    
-    s.metadata['bloom_description'] = 'N'  
+    s.metadata['lifecycle_code'] = 'N'    
+    s.metadata['lifecycle_description'] = 'N'  
     s.metadata['genus'] = 'N'    
     s.metadata['species'] = 'N'      
     s.metadata['common_name'] = 'N'       
@@ -158,7 +160,7 @@ def read(filepath, jump_correct = False):
             #s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['MX'] # (default value)
             #add age default?
             #s.metadata['health_description'], s.metadata['health_code'] = health_codes['H'] # (default value)
-            #s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['N'] # (default value)
+            #s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['N'] # (default value)
     # checking for specific informal or non - target species Genus_species code (ignore case)
     if ('beachgrass' in fname.lower()) or ('beach_grass' in fname.lower()):
         s.metadata['genus'], s.metadata['species'], s.metadata['common_name'], s.metadata['sub-category'], s.metadata['url'] = plant_codes['Ammo_bre']
@@ -239,18 +241,18 @@ def read(filepath, jump_correct = False):
         s.metadata['age_description'], s.metadata['age_code'] = age_codes['1G']
             
     if ('dormant' in fname.lower()) or ('dormant' in s.metadata['comment'].lower()):
-        s.metadata['age_description'], s.metadata['age_code'] = age_codes['D']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['D']
         #s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
             
     if ('scenesed' in fname.lower()):
-        s.metadata['age_description'], s.metadata['age_code'] = age_codes['D']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['D']
             
     if ('_scenesced0' in fname.lower()):
-        s.metadata['age_description'], s.metadata['age_code'] = age_codes['D']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['D']
         #s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
         
     if ('early-season-growth' in fname.lower()) or ('early-season-growth' in s.metadata['comment'].lower()):
-        s.metadata['age_description'], s.metadata['age_code'] = age_codes['RE']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['RE']
             
     #if ('senesced portion' in fname.lower()) or ('senesced portion' in s.metadata['comment'].lower()):
         #s.metadata['health_description'], s.metadata['health_code'] = health_codes['D']
@@ -293,19 +295,19 @@ def read(filepath, jump_correct = False):
         s.metadata['health_description'], s.metadata['health_code'] = health_codes['R']
             
     
-    # checking for bloom codes
-    for key in bloom_codes.keys():
+    # checking for lifecycle codes
+    for key in lifecycle_codes.keys():
         if ('_'+key+'_' in fname) or ('_'+key+'0' in fname):
-            s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes[key]
+            s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes[key]
     
     if ('_FL_0' in fname) or ('_FL0' in fname):
-        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FLG']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['FLG']
     
     if ('_FR_0' in fname) or ('_FR0' in fname):
-        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FRG']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['FRG']
 
     if ('_FF_0' in fname) or ('_FF0' in fname):
-        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FFG']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['FFG']
 
     
     # checking for plant part codes
@@ -329,7 +331,7 @@ def read(filepath, jump_correct = False):
         s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['L']
             
     if ('flower' in fname.lower()):
-        s.metadata['bloom_description'], s.metadata['bloom_code'] = bloom_codes['FLG']
+        s.metadata['lifecycle_description'], s.metadata['lifecycle_code'] = lifecycle_codes['FLG']
         if ('flower' in s.metadata['comment'].lower()):
             s.metadata['principal_part_description'], s.metadata['principal_part_code'] = principal_part_codes['FL']
         if ('leav' in s.metadata['comment'].lower()):
@@ -444,6 +446,8 @@ def read(filepath, jump_correct = False):
         s.metadata['comment'] = s.metadata['comment'] + "_after_salt_inundation"
 
 
+## ADDITIONAL RULES
+
     # checking for bp (bifurcated probe) in comments for collections before Allied_01_27_2025
     if ('bp' == s.metadata['comment'].lower()) and (s.metadata['DateTimeUniqueIdentifier'] < '20250127_000000'):
         if (('L' == s.metadata['principal_part_code']) and ('RE' != s.metadata['age_code'])) or ('MX' == s.metadata['principal_part_code']):
@@ -452,6 +456,14 @@ def read(filepath, jump_correct = False):
     # updating bp for collection: Allied_01_27_2025
     if (s.metadata['DateTimeUniqueIdentifier'] >= '20250127_151411') and (s.metadata['DateTimeUniqueIdentifier'] < '20250128_000000'):
         s.metadata['comment'] = 'bp'
+
+    # Updating tagging for RE after discussion on 2/20/25
+    if ('chas_lat' in fname.lower()):
+        if (s.metadata['DateTimeUniqueIdentifier'] >= '20250101_000000'):
+            if ('_RE_' in fname):
+                s.metadata['age_code'] = 'J'    
+                if (s.metadata['DateTimeUniqueIdentifier'] < '20250115_000000') and (s.metadata['lifecycle_code'] == 'N'):
+                    s.metadata['lifecycle_code'] = 'RE'        
 
     return s
 
@@ -732,12 +744,12 @@ def build_UPWINS_ASD_database(destination = '', DeployToMongoDB = False):
     df['principal_part'] = ''
     df['age'] = ''
     df['health'] = ''
-    df['bloom'] = ''
+    df['lifecycle'] = ''
     df['location'] = ''
     df['DateTimeUniqueIdentifier'] = ''
     df['datetime_readable'] = ''
     df['Instrument #'] = ''
-    df = df[['ASD UPWINS base_fname', 'datetime_readable', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'age', 'health', 'bloom', 'location', 'comment', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD base_fname', 'ASD fname']]
+    df = df[['ASD UPWINS base_fname', 'datetime_readable', 'category', 'sub-category', 'genus', 'species', 'principal_part', 'age', 'health', 'lifecycle', 'location', 'comment', 'DateTimeUniqueIdentifier', 'Instrument #', 'ASD base_fname', 'ASD fname']]
 
     # list of spectral data
     data = []
@@ -770,7 +782,7 @@ def build_UPWINS_ASD_database(destination = '', DeployToMongoDB = False):
                     '_'+\
                     s.metadata['health_code']+\
                     '_'+\
-                    s.metadata['bloom_code']+\
+                    s.metadata['lifecycle_code']+\
                     '_'+\
                     s.metadata['DateTimeUniqueIdentifier']+\
                     '.asd'
@@ -818,7 +830,7 @@ def build_UPWINS_ASD_database(destination = '', DeployToMongoDB = False):
             df.at[index, 'health'] = str(s.metadata['health_code'])
 
             # fill in the health_code for this ASD file
-            df.at[index, 'bloom'] = str(s.metadata['bloom_code'])
+            df.at[index, 'lifecycle'] = str(s.metadata['lifecycle_code'])
             
             # fill in the location for this ASD file
             df.at[index, 'location'] = str(s.metadata['location'])
