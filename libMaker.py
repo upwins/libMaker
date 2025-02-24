@@ -358,20 +358,21 @@ def read(filepath, jump_correct = False):
 
 
     # checking for other material categories
-    if ('soil' in fname.lower()) or ('soil' in s.metadata['comment'].lower()):
-        s.metadata['category'] = 'soil'
-        if 'plota' in fname.lower():
-            s.metadata['sub-category'] = 'clay'
-            s.metadata['location'] = 'PlotA'
-        if 'plotb' in fname.lower():
-            s.metadata['sub-category'] = 'clay'
-            s.metadata['location'] = 'PlotB'
-        if 'sand' in fname.lower():
-            s.metadata['sub-category'] = 'golf-course-sand'
-            s.metadata['location'] = 'Morven'
-        if 'morven1_bg' in fname.lower():
-            s.metadata['sub-category'] = 'clay'
-            s.metadata['location'] = 'Morven'            
+    # 2/24 Commented out the below; no ASD files in the library contain "soil" except for spectra we want to include re: sprouts taken from the soil
+    # if ('soil' in fname.lower()) or ('soil' in s.metadata['comment'].lower()):
+    #     s.metadata['category'] = 'soil'
+    #     if 'plota' in fname.lower():
+    #         s.metadata['sub-category'] = 'clay'
+    #         s.metadata['location'] = 'PlotA'
+    #     if 'plotb' in fname.lower():
+    #         s.metadata['sub-category'] = 'clay'
+    #         s.metadata['location'] = 'PlotB'
+    #     if 'sand' in fname.lower():
+    #         s.metadata['sub-category'] = 'golf-course-sand'
+    #         s.metadata['location'] = 'Morven'
+    #     if 'morven1_bg' in fname.lower():
+    #         s.metadata['sub-category'] = 'clay'
+    #         s.metadata['location'] = 'Morven'            
         
     if ('gravel_road' in fname.lower()) or ('gravel_road' in s.metadata['comment'].lower()):
         s.metadata['category'] = 'road'
@@ -464,6 +465,10 @@ def read(filepath, jump_correct = False):
                 s.metadata['age_code'] = 'J'    
                 if (s.metadata['DateTimeUniqueIdentifier'] < '20250115_000000') and (s.metadata['lifecycle_code'] == 'N'):
                     s.metadata['lifecycle_code'] = 'RE'        
+
+    # Update comment to indicate that all ASD files collected today were collected with the bp probe
+    if (s.metadata['DateTimeUniqueIdentifier'] >= '20250224_000000') and (s.metadata['DateTimeUniqueIdentifier'] < '20250225_000000') and ('bp' not in s.metadata['comment'].lower()):
+        s.metadata['comment'] = 'bp' + s.metadata['comment']
 
     return s
 
