@@ -469,6 +469,10 @@ def read(filepath, jump_correct = False):
     # Update comment to indicate that all ASD files collected today were collected with the bp probe
     if (s.metadata['DateTimeUniqueIdentifier'] >= '20250224_000000') and (s.metadata['DateTimeUniqueIdentifier'] < '20250225_000000') and ('bp' not in s.metadata['comment'].lower()):
         s.metadata['comment'] = 'bp' + s.metadata['comment']
+    
+    # updating bp for collection: Allied_03_17_2025
+    if ('rosa_rug' in fname.lower()) and (s.metadata['DateTimeUniqueIdentifier'] >= '20250317_000000') and (s.metadata['DateTimeUniqueIdentifier'] < '20250318_000000'):
+        s.metadata['comment'] = 'bp'
 
     return s
 
